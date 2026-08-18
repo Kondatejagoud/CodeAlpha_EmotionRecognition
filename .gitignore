@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.ipynb_checkpoints/
+
+# ML Data & Artifacts
+ml/data/ravdess/
+ml/data/*.zip
+ml/models/saved/
+experiments/*.pt
+experiments/*.onnx
+experiments/*.pkl
+
+# Databases
+*.db
+*.db-journal
+
+# Environment variables
+.env
+
+# Node.js (React frontend)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+frontend/dist/
+frontend/build/
+.eslintcache
+
+# IDEs
+.vscode/
+.idea/
+.DS_Store

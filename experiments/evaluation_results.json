@@ -1,0 +1,198 @@
+{
+    "model_name": "cnn-bilstm-attention",
+    "feature_representation": "mel",
+    "evaluation_timestamp": "2026-08-18 11:17:14",
+    "global_metrics": {
+        "accuracy": 0.1333,
+        "macro_precision": 0.0167,
+        "macro_recall": 0.125,
+        "macro_f1": 0.0294,
+        "weighted_f1": 0.0314,
+        "macro_roc_auc": 0.5453
+    },
+    "per_class_metrics": {
+        "Neutral": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1_score": 0.0
+        },
+        "Calm": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1_score": 0.0
+        },
+        "Happy": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1_score": 0.0
+        },
+        "Sad": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1_score": 0.0
+        },
+        "Angry": {
+            "precision": 0.1333,
+            "recall": 1.0,
+            "f1_score": 0.2353
+        },
+        "Fearful": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1_score": 0.0
+        },
+        "Disgust": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1_score": 0.0
+        },
+        "Surprised": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1_score": 0.0
+        }
+    },
+    "speaker_gender_breakdown": {
+        "male": 0.1333,
+        "female": 0.1333
+    },
+    "individual_actor_accuracy": {
+        "Actor_24": 0.1333,
+        "Actor_21": 0.1333,
+        "Actor_22": 0.1333,
+        "Actor_23": 0.1333
+    },
+    "common_confusions": [
+        {
+            "true": "Calm",
+            "predicted": "Angry",
+            "count": 32
+        },
+        {
+            "true": "Happy",
+            "predicted": "Angry",
+            "count": 32
+        },
+        {
+            "true": "Sad",
+            "predicted": "Angry",
+            "count": 32
+        },
+        {
+            "true": "Fearful",
+            "predicted": "Angry",
+            "count": 32
+        },
+        {
+            "true": "Disgust",
+            "predicted": "Angry",
+            "count": 32
+        }
+    ],
+    "class_difficulty_ranking": [
+        {
+            "emotion": "Neutral",
+            "f1_score": 0.0
+        },
+        {
+            "emotion": "Calm",
+            "f1_score": 0.0
+        },
+        {
+            "emotion": "Happy",
+            "f1_score": 0.0
+        },
+        {
+            "emotion": "Sad",
+            "f1_score": 0.0
+        },
+        {
+            "emotion": "Fearful",
+            "f1_score": 0.0
+        },
+        {
+            "emotion": "Disgust",
+            "f1_score": 0.0
+        },
+        {
+            "emotion": "Surprised",
+            "f1_score": 0.0
+        },
+        {
+            "emotion": "Angry",
+            "f1_score": 0.2353
+        }
+    ],
+    "misclassified_samples": [
+        {
+            "filename": "03-01-01-01-01-01-21.wav",
+            "gender": "male",
+            "actor_id": 21,
+            "true_emotion": "Neutral",
+            "predicted_emotion": "Angry"
+        },
+        {
+            "filename": "03-01-01-01-01-02-21.wav",
+            "gender": "male",
+            "actor_id": 21,
+            "true_emotion": "Neutral",
+            "predicted_emotion": "Angry"
+        },
+        {
+            "filename": "03-01-01-01-02-01-21.wav",
+            "gender": "male",
+            "actor_id": 21,
+            "true_emotion": "Neutral",
+            "predicted_emotion": "Angry"
+        },
+        {
+            "filename": "03-01-01-01-02-02-21.wav",
+            "gender": "male",
+            "actor_id": 21,
+            "true_emotion": "Neutral",
+            "predicted_emotion": "Angry"
+        },
+        {
+            "filename": "03-01-02-01-01-01-21.wav",
+            "gender": "male",
+            "actor_id": 21,
+            "true_emotion": "Calm",
+            "predicted_emotion": "Angry"
+        },
+        {
+            "filename": "03-01-02-01-01-02-21.wav",
+            "gender": "male",
+            "actor_id": 21,
+            "true_emotion": "Calm",
+            "predicted_emotion": "Angry"
+        },
+        {
+            "filename": "03-01-02-01-02-01-21.wav",
+            "gender": "male",
+            "actor_id": 21,
+            "true_emotion": "Calm",
+            "predicted_emotion": "Angry"
+        },
+        {
+            "filename": "03-01-02-01-02-02-21.wav",
+            "gender": "male",
+            "actor_id": 21,
+            "true_emotion": "Calm",
+            "predicted_emotion": "Angry"
+        },
+        {
+            "filename": "03-01-02-02-01-01-21.wav",
+            "gender": "male",
+            "actor_id": 21,
+            "true_emotion": "Calm",
+            "predicted_emotion": "Angry"
+        },
+        {
+            "filename": "03-01-02-02-01-02-21.wav",
+            "gender": "male",
+            "actor_id": 21,
+            "true_emotion": "Calm",
+            "predicted_emotion": "Angry"
+        }
+    ]
+}
