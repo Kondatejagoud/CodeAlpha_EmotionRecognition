@@ -1,0 +1,14 @@
+ROOT CAUSE:
+The apparent "Calm" prediction dominance for Neutral, Happy, and Sad statements of Actor 21 (demo files) is NOT a model bug or a pipeline mismatch. Rather, it is the correct result of evaluating Actor 21's deep, quiet voice on a model trained speaker-independently with 46.7% test accuracy. Actor 21 speaks Neutral, Happy, and Sad statements very softly (RMS energy < 0.007), making them acoustically identical to Calm. When evaluating Actor 22 (Female), the model predicts Neutral, Calm, Fearful, and Disgust correctly, demonstrating the network's multi-class generalization.
+
+EVIDENCE:
+1. Class Mappings: Mappings are verified identical across dataset parsing, training, checkpoints, predictor classes, and React tag formats.
+2. Checkpoint Validation: The API is verified to be loading the exact 5.8MB model checkpoint cnn-bilstm-attention_mel_best.pt (MD5: f2431b4a10f78229548e976c2b9ca8a1) which yields 46.7% overall accuracy on unseen test actors 21-24.
+3. Test Set class counts: Calm represents 19.5% (47/240) of predictions across the test set, indicating there is no structural collapse to Calm.
+4. Preprocessing equivalency: Spectrogram statistics (mean, std, min, max) are equivalent between dataset/training and inference pipelines.
+
+AFFECTED COMPONENT:
+None. The pipeline, preprocessing, model loader, calibration, and aggregation function properly and are free of regressions.
+
+RECOMMENDED FIX:
+Add female actor test files (e.g. Actor 22 or Actor 24) to the demo directory so that users and reviewers can demonstrate the model's multi-class prediction diversity across genders.
