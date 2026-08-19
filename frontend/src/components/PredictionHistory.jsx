@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function PredictionHistory({ history, onSelectRecord }) {
+export default function PredictionHistory({ history, onSelectRecord, onClearHistory }) {
   const getReliabilityBadge = (rel) => {
     switch (rel) {
       case 'HIGH': return 'rel-high';
@@ -23,7 +23,22 @@ export default function PredictionHistory({ history, onSelectRecord }) {
     <div className="history-card">
       <div className="history-header">
         <h3>Prediction History</h3>
-        <span className="history-count">{history.length} records</span>
+        <div className="history-header-actions">
+          <span className="history-count">{history.length} records</span>
+          {history.length > 0 && onClearHistory && (
+            <button 
+              className="btn-clear-history" 
+              onClick={(e) => {
+                e.stopPropagation();
+                if (window.confirm("Are you sure you want to clear all history?")) {
+                  onClearHistory();
+                }
+              }}
+            >
+              Clear
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="history-list">

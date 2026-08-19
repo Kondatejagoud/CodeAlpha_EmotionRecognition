@@ -1,0 +1,10 @@
+{
+    "Strategy A (3.0s crop)": {
+        "Val Accuracy": 0.4666666666666667,
+        "Val Macro F1": 0.44803546852835907
+    },
+    "Strategy D (3.0s Multi-window inference)": {
+        "Val Accuracy": 0.25,
+        "Val Macro F1": 0.1917967298402081
+    }
+}

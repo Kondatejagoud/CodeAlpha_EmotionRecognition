@@ -1,3 +1,5 @@
+import os
+import json
 import numpy as np
 import librosa
 import soundfile as sf
@@ -13,8 +15,28 @@ class AudioProcessor:
         target_sr: int = 22050,
         target_duration: float = 3.0,
         trim_db: float = 30.0,
-        normalize_volume: bool = True
+        normalize_volume: bool = True,
+        config_path: Optional[str] = None
     ):
+        # Load from config file if provided or available by default
+        if config_path is None:
+            default_path = "models/preprocessing_config.json"
+            if not os.path.exists(default_path):
+                default_path = "ml/models/saved/preprocessing_config.json"
+            if os.path.exists(default_path):
+                config_path = default_path
+                
+        if config_path and os.path.exists(config_path):
+            try:
+                with open(config_path, 'r') as f:
+                    config = json.load(f)
+                target_sr = config.get("sample_rate", target_sr)
+                target_duration = config.get("target_duration", target_duration)
+                trim_db = config.get("trim_db", trim_db)
+                normalize_volume = config.get("normalize_volume", normalize_volume)
+                print(f"AudioProcessor loaded config from {config_path}")
+            except Exception as e:
+                print(f"Warning: Failed to load config in AudioProcessor: {e}")
         self.target_sr = target_sr
         self.target_duration = target_duration
         self.target_samples = int(target_sr * target_duration)

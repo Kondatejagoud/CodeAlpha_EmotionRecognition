@@ -31,6 +31,23 @@ export default function Dashboard() {
     }
   };
 
+  const handleClearHistory = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/history`, {
+        method: "DELETE"
+      });
+      if (response.ok) {
+        setHistoryList([]);
+        setActivePrediction(null);
+      } else {
+        alert("Failed to clear prediction history.");
+      }
+    } catch (err) {
+      console.error("Error clearing prediction history:", err);
+      alert(`Clear history failed: ${err.message}`);
+    }
+  };
+
   const fetchModelInfo = async () => {
     try {
       const response = await fetch(`${API_BASE}/model-info`);
@@ -235,6 +252,7 @@ export default function Dashboard() {
                 }
               });
             }} 
+            onClearHistory={handleClearHistory}
           />
         </section>
       </main>

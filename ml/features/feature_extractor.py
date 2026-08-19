@@ -1,8 +1,10 @@
+import os
+import json
 import numpy as np
 import librosa
 import matplotlib.pyplot as plt
 import io
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Optional
 
 class FeatureExtractor:
     """
@@ -16,8 +18,28 @@ class FeatureExtractor:
         hop_length: int = 512,
         n_mels: int = 128,
         n_mfcc: int = 13,
-        n_chroma: int = 12
+        n_chroma: int = 12,
+        config_path: Optional[str] = None
     ):
+        # Load from config file if provided or available by default
+        if config_path is None:
+            default_path = "models/preprocessing_config.json"
+            if not os.path.exists(default_path):
+                default_path = "ml/models/saved/preprocessing_config.json"
+            if os.path.exists(default_path):
+                config_path = default_path
+                
+        if config_path and os.path.exists(config_path):
+            try:
+                with open(config_path, 'r') as f:
+                    config = json.load(f)
+                sr = config.get("sample_rate", sr)
+                n_fft = config.get("n_fft", n_fft)
+                hop_length = config.get("hop_length", hop_length)
+                n_mels = config.get("n_mels", n_mels)
+                print(f"FeatureExtractor loaded config from {config_path}")
+            except Exception as e:
+                print(f"Warning: Failed to load config in FeatureExtractor: {e}")
         self.sr = sr
         self.n_fft = n_fft
         self.hop_length = hop_length

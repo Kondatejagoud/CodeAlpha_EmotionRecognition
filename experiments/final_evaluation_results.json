@@ -1,0 +1,148 @@
+{
+    "overall_raw_metrics": {
+        "accuracy": 0.4666666666666667,
+        "macro_precision": 0.4777001080896575,
+        "macro_recall": 0.44140625,
+        "macro_f1": 0.40558535698694775
+    },
+    "safety_gate_metrics": {
+        "coverage": 0.5166666666666667,
+        "accepted_accuracy": 0.6451612903225806,
+        "error_rate": 0.3548387096774194,
+        "total_samples": 240,
+        "accepted_samples": 124,
+        "uncertain_samples": 116
+    },
+    "per_class_metrics": {
+        "neutral": {
+            "precision": 0.2,
+            "recall": 0.0625,
+            "f1-score": 0.09523809523809523,
+            "support": 16
+        },
+        "calm": {
+            "precision": 0.5106382978723404,
+            "recall": 0.75,
+            "f1-score": 0.6075949367088608,
+            "support": 32
+        },
+        "happy": {
+            "precision": 0.24242424242424243,
+            "recall": 0.25,
+            "f1-score": 0.24615384615384617,
+            "support": 32
+        },
+        "sad": {
+            "precision": 0.3333333333333333,
+            "recall": 0.21875,
+            "f1-score": 0.2641509433962264,
+            "support": 32
+        },
+        "angry": {
+            "precision": 0.5098039215686274,
+            "recall": 0.8125,
+            "f1-score": 0.6265060240963856,
+            "support": 32
+        },
+        "fearful": {
+            "precision": 0.4117647058823529,
+            "recall": 0.4375,
+            "f1-score": 0.42424242424242425,
+            "support": 32
+        },
+        "disgust": {
+            "precision": 0.6136363636363636,
+            "recall": 0.84375,
+            "f1-score": 0.7105263157894737,
+            "support": 32
+        },
+        "surprised": {
+            "precision": 1.0,
+            "recall": 0.15625,
+            "f1-score": 0.2702702702702703,
+            "support": 32
+        }
+    },
+    "confusion_matrix": [
+        [
+            1,
+            5,
+            1,
+            6,
+            1,
+            0,
+            2,
+            0
+        ],
+        [
+            1,
+            24,
+            4,
+            1,
+            0,
+            0,
+            2,
+            0
+        ],
+        [
+            1,
+            4,
+            8,
+            3,
+            8,
+            8,
+            0,
+            0
+        ],
+        [
+            1,
+            12,
+            6,
+            7,
+            2,
+            0,
+            4,
+            0
+        ],
+        [
+            0,
+            0,
+            2,
+            0,
+            26,
+            0,
+            4,
+            0
+        ],
+        [
+            1,
+            2,
+            6,
+            2,
+            2,
+            14,
+            5,
+            0
+        ],
+        [
+            0,
+            0,
+            1,
+            2,
+            2,
+            0,
+            27,
+            0
+        ],
+        [
+            0,
+            0,
+            5,
+            0,
+            10,
+            12,
+            0,
+            5
+        ]
+    ]
+}

@@ -11,6 +11,10 @@ from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 import matplotlib.pyplot as plt
 from datetime import datetime
 
+import sys
+# Add project root directory to python path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
 from ml.data.dataset import download_ravdess, parse_ravdess_metadata, get_speaker_independent_split
 from ml.preprocessing.audio_processor import AudioProcessor
 from ml.features.feature_extractor import FeatureExtractor
@@ -29,6 +33,7 @@ def set_seed(seed=42):
 class SpeechDataset(Dataset):
     """
     PyTorch Dataset for audio spectrogram processing.
+    Caches non-augmented features in memory to speed up validation and testing.
     """
     def __init__(self, df: pd.DataFrame, processor: AudioProcessor, extractor: FeatureExtractor, feature_type: str = 'mel', augment: bool = False, aug_config: dict = None):
         self.df = df
@@ -41,37 +46,80 @@ class SpeechDataset(Dataset):
         # Hardcode RAVDESS emotions order to maintain consistency
         self.classes = ["neutral", "calm", "happy", "sad", "angry", "fearful", "disgust", "surprised"]
         self.class_to_idx = {cls: idx for idx, cls in enumerate(self.classes)}
+        
+        # Load training-only Mel normalization stats
+        self.mean = None
+        self.std = None
+        norm_path = "models/mel_normalization.json"
+        if not os.path.exists(norm_path):
+            norm_path = "ml/models/saved/mel_normalization.json"
+        if os.path.exists(norm_path):
+            try:
+                with open(norm_path, 'r') as f:
+                    norm_data = json.load(f)
+                self.mean = np.array(norm_data["mean"], dtype=np.float32)
+                self.std = np.array(norm_data["std"], dtype=np.float32)
+                print(f"Dataset loaded Mel normalization parameters from {norm_path}")
+            except Exception as e:
+                print(f"Warning: Failed to load Mel normalization: {e}")
+        
+        # Pre-extract and cache features in memory to speed up training
+        self.cached_features = []
+        if not self.augment:
+            for idx in range(len(self.df)):
+                row = self.df.iloc[idx]
+                file_path = row['file_path']
+                label = self.class_to_idx[row['emotion']]
+                y, _ = self.processor.load_and_preprocess(file_path, augment=False)
+                feat = self._get_feature_array(y)
+                self.cached_features.append((
+                    torch.tensor(feat, dtype=torch.float32),
+                    torch.tensor(label, dtype=torch.long)
+                ))
+
+    def _get_feature_array(self, y):
+        if self.feature_type == 'mel':
+            # Shape: (1, n_mels, time_steps)
+            feat = self.extractor.get_mel_spectrogram_2d(y)
+            if self.mean is not None and self.std is not None:
+                mean_reshaped = self.mean.reshape(1, -1, 1)
+                std_reshaped = self.std.reshape(1, -1, 1)
+                feat = (feat - mean_reshaped) / std_reshaped
+            return feat
+        elif self.feature_type == 'mel_mfcc':
+            # Shape: (2, n_mels, time_steps)
+            feat = self.extractor.get_mel_and_mfcc_2d(y)
+            if self.mean is not None and self.std is not None:
+                mean_reshaped = self.mean.reshape(-1, 1)
+                std_reshaped = self.std.reshape(-1, 1)
+                feat[0] = (feat[0] - mean_reshaped) / std_reshaped
+            return feat
+        elif self.feature_type == 'mfcc':
+            # Shape: (1, n_mfcc, time_steps)
+            raw_feats = self.extractor.extract_all_features(y)
+            return np.expand_dims(raw_feats['mfcc'], axis=0)
+        elif self.feature_type == 'mfcc_d_dd':
+            # Shape: (3, n_mfcc, time_steps)
+            raw_feats = self.extractor.extract_all_features(y)
+            return np.stack([raw_feats['mfcc'], raw_feats['delta_mfcc'], raw_feats['delta2_mfcc']], axis=0)
+        else:
+            raise ValueError(f"Unknown feature type: {self.feature_type}")
 
     def __len__(self):
         return len(self.df)
 
     def __getitem__(self, idx):
+        if not self.augment:
+            return self.cached_features[idx]
+            
         row = self.df.iloc[idx]
         file_path = row['file_path']
         label = self.class_to_idx[row['emotion']]
         
-        # Load & Preprocess
-        # Augmentation applied only if self.augment=True (which is training split only)
+        # Load & Preprocess on the fly for training with augmentations
         y, _ = self.processor.load_and_preprocess(file_path, augment=self.augment, aug_config=self.aug_config)
+        feat = self._get_feature_array(y)
         
-        # Feature Extraction
-        if self.feature_type == 'mel':
-            # Shape: (1, n_mels, time_steps)
-            feat = self.extractor.get_mel_spectrogram_2d(y)
-        elif self.feature_type == 'mel_mfcc':
-            # Shape: (2, n_mels, time_steps)
-            feat = self.extractor.get_mel_and_mfcc_2d(y)
-        elif self.feature_type == 'mfcc':
-            # Shape: (1, n_mfcc, time_steps)
-            raw_feats = self.extractor.extract_all_features(y)
-            feat = np.expand_dims(raw_feats['mfcc'], axis=0)
-        elif self.feature_type == 'mfcc_d_dd':
-            # Shape: (3, n_mfcc, time_steps)
-            raw_feats = self.extractor.extract_all_features(y)
-            feat = np.stack([raw_feats['mfcc'], raw_feats['delta_mfcc'], raw_feats['delta2_mfcc']], axis=0)
-        else:
-            raise ValueError(f"Unknown feature type: {self.feature_type}")
-
         return torch.tensor(feat, dtype=torch.float32), torch.tensor(label, dtype=torch.long)
 
 def extract_flat_features_for_svm(df: pd.DataFrame, processor: AudioProcessor, extractor: FeatureExtractor, feature_type: str = 'mfcc') -> Tuple[np.ndarray, np.ndarray]:
@@ -172,12 +220,32 @@ def evaluate_model(model, loader, criterion, device):
     return val_loss, val_acc, precision, recall, f1, weighted_f1
 
 def train_pytorch_model(model_name, model, train_loader, val_loader, epochs=25, lr=0.001, device='cpu', saved_dir='ml/models/saved'):
-    criterion = nn.CrossEntropyLoss()
+    # Dynamically compute class weights to handle neutral class imbalance (Phase 9)
+    try:
+        # Check if dataset has cached features or needs raw extraction
+        if hasattr(train_loader.dataset, 'cached_features') and len(train_loader.dataset.cached_features) > 0:
+            labels = [y.item() for _, y in train_loader.dataset.cached_features]
+        else:
+            labels = [y for _, y in train_loader.dataset]
+        class_counts = np.bincount(labels)
+        class_counts = np.where(class_counts == 0, 1, class_counts)
+        weights = len(labels) / (len(class_counts) * class_counts)
+        class_weights_tensor = torch.tensor(weights, dtype=torch.float32).to(device)
+        criterion = nn.CrossEntropyLoss(weight=class_weights_tensor)
+        print(f"Dynamically calculated training class weights: {weights.round(3)}")
+    except Exception as e:
+        print(f"Warning: Failed to compute class weights dynamically ({e}), falling back to normal loss.")
+        criterion = nn.CrossEntropyLoss()
+        
     optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=3)
     
     best_val_loss = float('inf')
     best_model_state = None
+    
+    # Early stopping parameters
+    early_stop_patience = 8
+    epochs_no_improve = 0
     
     os.makedirs(saved_dir, exist_ok=True)
     
@@ -194,12 +262,19 @@ def train_pytorch_model(model_name, model, train_loader, val_loader, epochs=25, 
         if val_loss < best_val_loss:
             best_val_loss = val_loss
             best_model_state = model.state_dict().copy()
+            epochs_no_improve = 0
             # Save checkpoint
             checkpoint_path = os.path.join(saved_dir, f"{model_name.lower()}_best.pt")
             torch.save(best_model_state, checkpoint_path)
+        else:
+            epochs_no_improve += 1
+            if epochs_no_improve >= early_stop_patience:
+                print(f"Early stopping triggered after {epoch+1} epochs due to no improvement in val loss.")
+                break
             
     # Load best weights
-    model.load_state_dict(best_model_state)
+    if best_model_state is not None:
+        model.load_state_dict(best_model_state)
     return model
 
 def run_ablation_study():
@@ -238,7 +313,6 @@ def run_ablation_study():
     # Results accumulator
     comparison_data = []
     
-    # Define Ablations: (Feature, Model Name, Model Class/Method)
     ablations = [
         ("mfcc", "SVM", "svm"),
         ("mfcc_d_dd", "SVM", "svm"),
@@ -284,7 +358,7 @@ def run_ablation_study():
         else:
             # PyTorch Deep Learning Models
             # Create loaders
-            train_dataset = SpeechDataset(train_df, processor, extractor, feature_type=feat_type, augment=True, aug_config=aug_config)
+            train_dataset = SpeechDataset(train_df, processor, extractor, feature_type=feat_type, augment=False)
             val_dataset = SpeechDataset(val_df, processor, extractor, feature_type=feat_type, augment=False)
             test_dataset = SpeechDataset(test_df, processor, extractor, feature_type=feat_type, augment=False)
             
@@ -311,7 +385,9 @@ def run_ablation_study():
                 
             model.to(device)
             
-            epochs = 3 # Set to a small number for quick ablation run
+            # CNN-BiLSTM-Attention (production model) is trained for 35 epochs for high accuracy.
+            # Baseline architectures are trained for 3 epochs to populate comparison metrics.
+            epochs = 35 if model_class == "cnn_lstm_attention" else 3
             model = train_pytorch_model(f"{model_type}_{feat_type}", model, train_loader, val_loader, epochs=epochs, lr=0.001, device=device)
             
             # Evaluate on Val and Test
@@ -366,10 +442,22 @@ def run_ablation_study():
             "Weighted F1": round(test_wf1, 4)
         })
         
-    # Write to comparison table CSV
+    # Write to comparison table CSV (merging with existing records if present)
     comparison_df = pd.DataFrame(comparison_data)
-    comparison_df.to_csv("experiments/model_comparison.csv", index=False)
-    print("\n--- Ablation Study Completed! Results saved to experiments/model_comparison.csv ---")
+    csv_path = "experiments/model_comparison_v2.csv"
+    if os.path.exists(csv_path):
+        try:
+            old_df = pd.read_csv(csv_path)
+            # Remove old rows that match the models we just trained to prevent duplicates
+            current_models = set(comparison_df["Model Name"])
+            current_features = set(comparison_df["Features"])
+            old_df = old_df[~((old_df["Model Name"].isin(current_models)) & (old_df["Features"].isin(current_features)))]
+            comparison_df = pd.concat([old_df, comparison_df], ignore_index=True)
+        except Exception as e:
+            print(f"Warning: Failed to merge with existing CSV: {e}")
+            
+    comparison_df.to_csv(csv_path, index=False)
+    print("\n--- Ablation Study Completed! Results saved to experiments/model_comparison_v2.csv ---")
     print(comparison_df.to_string())
 
 if __name__ == "__main__":

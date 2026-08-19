@@ -145,13 +145,16 @@ def get_speaker_independent_split(df: pd.DataFrame):
         raise ValueError("Dataframe is empty. Cannot split.")
         
     train_df = df[df["actor_id"].between(1, 18)].reset_index(drop=True)
-    val_df = df[df["actor_id"].between(1, 19) & (df["actor_id"] >= 19) & (df["actor_id"] <= 20)].reset_index(drop=True)
+    val_df = df[df["actor_id"].isin([19, 20])].reset_index(drop=True)
     test_df = df[df["actor_id"].between(21, 24)].reset_index(drop=True)
     
     print(f"Speaker-independent split summary:")
     print(f"  Train: {len(train_df)} files (Actors 1-18)")
+    print(f"    Class distribution: {train_df['emotion'].value_counts().to_dict()}")
     print(f"  Val:   {len(val_df)} files (Actors 19-20)")
+    print(f"    Class distribution: {val_df['emotion'].value_counts().to_dict()}")
     print(f"  Test:  {len(test_df)} files (Actors 21-24)")
+    print(f"    Class distribution: {test_df['emotion'].value_counts().to_dict()}")
     
     # Check for speaker overlap
     train_actors = set(train_df["actor_id"])

@@ -59,7 +59,7 @@ export default function GradCamPlot({ gradCam }) {
 
     // Fill offscreen buffer (flip vertically since mel arrays start low freq to high)
     for (let y = 0; y < rows; y++) {
-      const targetRow = rows - y - 1; # flip vertically
+      const targetRow = rows - y - 1; // flip vertically
       for (let x = 0; x < cols; x++) {
         const val = gradCam[targetRow][x];
         const [r, g, b] = getColor(val);

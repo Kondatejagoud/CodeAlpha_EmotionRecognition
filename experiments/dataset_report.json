@@ -1,0 +1,108 @@
+{
+    "dataset_name": "RAVDESS Speech (Actors 01-24)",
+    "total_files_parsed": 1440,
+    "corrupted_files_count": 0,
+    "corrupted_files_list": [],
+    "sample_rates": [
+        48000
+    ],
+    "classes": [
+        "angry",
+        "calm",
+        "disgust",
+        "fearful",
+        "happy",
+        "neutral",
+        "sad",
+        "surprised"
+    ],
+    "class_distribution": {
+        "calm": 192,
+        "happy": 192,
+        "sad": 192,
+        "angry": 192,
+        "fearful": 192,
+        "disgust": 192,
+        "surprised": 192,
+        "neutral": 96
+    },
+    "speaker_gender_distribution": {
+        "male": 720,
+        "female": 720
+    },
+    "duration_metrics": {
+        "min": 2.9362708333333334,
+        "max": 5.2719375,
+        "mean": 3.7006648148148145,
+        "std": 0.33667563193231065
+    },
+    "splits_actors": {
+        "train": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18
+        ],
+        "val": [
+            19,
+            20
+        ],
+        "test": [
+            21,
+            22,
+            23,
+            24
+        ]
+    },
+    "splits_sizes": {
+        "train": 1080,
+        "val": 120,
+        "test": 240
+    },
+    "class_distribution_per_split": {
+        "train": {
+            "calm": 144,
+            "happy": 144,
+            "sad": 144,
+            "angry": 144,
+            "fearful": 144,
+            "disgust": 144,
+            "surprised": 144,
+            "neutral": 72
+        },
+        "val": {
+            "calm": 16,
+            "happy": 16,
+            "sad": 16,
+            "angry": 16,
+            "fearful": 16,
+            "disgust": 16,
+            "surprised": 16,
+            "neutral": 8
+        },
+        "test": {
+            "calm": 32,
+            "happy": 32,
+            "sad": 32,
+            "angry": 32,
+            "fearful": 32,
+            "disgust": 32,
+            "surprised": 32,
+            "neutral": 16
+        }
+    }
+}

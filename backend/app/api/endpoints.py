@@ -162,3 +162,16 @@ def get_prediction_history(
             "model_used": r.model_used
         })
     return history
+
+@router.delete("/history")
+def clear_prediction_history(db: Session = Depends(get_db)) -> Dict[str, str]:
+    """
+    Deletes all records from the prediction history database.
+    """
+    try:
+        db.query(PredictionHistory).delete()
+        db.commit()
+        return {"status": "success", "message": "Prediction history cleared successfully."}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to clear history: {str(e)}")

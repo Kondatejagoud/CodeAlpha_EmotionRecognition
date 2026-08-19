@@ -4,6 +4,7 @@ import torch
 import torch.nn.functional as F
 import numpy as np
 import joblib
+import librosa
 from typing import Dict, Any, Tuple
 
 from ml.preprocessing.audio_processor import AudioProcessor
@@ -39,6 +40,41 @@ class EmotionPredictor:
         self.model = None
         self.metadata = {}
         
+        # Load training-only Mel normalization stats
+        self.norm_mean = None
+        self.norm_std = None
+        norm_path = "models/mel_normalization.json"
+        if not os.path.exists(norm_path):
+            norm_path = os.path.join(self.model_dir, "mel_normalization.json")
+        if os.path.exists(norm_path):
+            try:
+                with open(norm_path, 'r') as f:
+                    norm_data = json.load(f)
+                self.norm_mean = np.array(norm_data["mean"], dtype=np.float32)
+                self.norm_std = np.array(norm_data["std"], dtype=np.float32)
+                print(f"EmotionPredictor loaded Mel normalization parameters from {norm_path}")
+            except Exception as e:
+                print(f"Warning: Failed to load Mel normalization: {e}")
+
+        # Load calibration parameters
+        self.temperature = 1.0
+        self.confidence_threshold = 0.40
+        self.margin_threshold = 0.15
+        
+        cal_path = "models/calibration_config.json"
+        if not os.path.exists(cal_path):
+            cal_path = os.path.join(self.model_dir, "calibration_config.json")
+        if os.path.exists(cal_path):
+            try:
+                with open(cal_path, 'r') as f:
+                    cal_data = json.load(f)
+                self.temperature = cal_data.get("temperature", 1.0)
+                self.confidence_threshold = cal_data.get("confidence_threshold", 0.40)
+                self.margin_threshold = cal_data.get("margin_threshold", 0.15)
+                print(f"EmotionPredictor loaded calibration config from {cal_path}")
+            except Exception as e:
+                print(f"Warning: Failed to load calibration config: {e}")
+
         # Load model and metadata
         self._load_predictor()
 
@@ -94,8 +130,8 @@ class EmotionPredictor:
 
     def predict(self, file_path: str) -> Dict[str, Any]:
         """
-        Analyzes quality, extracts features, runs inference, validates uncertainty,
-        and computes Grad-CAM/attention values.
+        Runs the complete inference pipeline on an audio file, using multi-window
+        segmentation and temperature probability calibration.
         """
         # 1. Run Audio Quality Analyzer
         quality = self.analyzer.analyze_file(file_path)
@@ -111,64 +147,128 @@ class EmotionPredictor:
                     "grad_cam": [],
                     "attention": []
                 },
-                "model_metadata": self.metadata
+                "model_metadata": self.metadata,
+                "final_prediction": "UNCERTAIN",
+                "aggregated_probabilities": {},
+                "window_predictions": []
             }
 
-        # 2. Load & preprocess audio
-        y_wave, sr = self.processor.load_and_preprocess(file_path, augment=False)
-        
-        # 3. Extract 2D features
-        if self.feature_type == "mel":
-            feat = self.extractor.get_mel_spectrogram_2d(y_wave)
-        elif self.feature_type == "mel_mfcc":
-            feat = self.extractor.get_mel_and_mfcc_2d(y_wave)
+        # 2. Load raw audio (resampled to target rate)
+        y_raw, sr = librosa.load(file_path, sr=self.processor.target_sr, mono=True)
+        # Trim silence
+        y_trimmed, _ = librosa.effects.trim(y_raw, top_db=self.processor.trim_db)
+        if len(y_trimmed) == 0:
+            y_trimmed = y_raw
+
+        w_samples = self.processor.target_samples
+        hop_samples = int(w_samples * 0.5) # 50% overlap
+
+        # Slice into windows of exactly w_samples
+        y_windows = []
+        if len(y_trimmed) <= w_samples:
+            pad_left = (w_samples - len(y_trimmed)) // 2
+            pad_right = w_samples - len(y_trimmed) - pad_left
+            y_windows.append(np.pad(y_trimmed, (pad_left, pad_right), mode='constant'))
         else:
-            # Fallback to standard mel
-            feat = self.extractor.get_mel_spectrogram_2d(y_wave)
-            
-        # Convert to tensor and send to device
-        input_tensor = torch.tensor(feat, dtype=torch.float32).unsqueeze(0).to(self.device) # shape: (1, channels, n_mels, time_steps)
-        
-        # 4. Model Forward Pass
-        outputs = self.model(input_tensor)
-        if isinstance(outputs, tuple):
-            logits, _ = outputs
-        else:
-            logits = outputs
-            
-        probs = F.softmax(logits, dim=1).squeeze(0).detach().cpu().numpy()
-        
-        # Sort predictions
-        sorted_indices = np.argsort(probs)[::-1]
+            for start in range(0, len(y_trimmed) - w_samples + 1, hop_samples):
+                y_windows.append(y_trimmed[start:start + w_samples])
+            if (len(y_trimmed) - w_samples) % hop_samples != 0:
+                y_windows.append(y_trimmed[-w_samples:])
+
+        # Make predictions for each window
+        all_probs = []
+        window_predictions = []
+        max_conf = -1.0
+        best_input_tensor = None
+        best_top1_idx = 0
+
+        # Mean and standard deviation scaling vectors
+        mean_reshaped = self.norm_mean.reshape(1, -1, 1) if self.norm_mean is not None else None
+        std_reshaped = self.norm_std.reshape(1, -1, 1) if self.norm_std is not None else None
+
+        for w_idx, window in enumerate(y_windows):
+            # Volume peak normalize the window segment
+            max_val = np.max(np.abs(window))
+            if max_val > 0:
+                window = window / max_val * 0.95
+
+            # Extract features
+            if self.feature_type == "mel":
+                feat = self.extractor.get_mel_spectrogram_2d(window)
+                if mean_reshaped is not None and std_reshaped is not None:
+                    feat = (feat - mean_reshaped) / std_reshaped
+            elif self.feature_type == "mel_mfcc":
+                feat = self.extractor.get_mel_and_mfcc_2d(window)
+                if self.norm_mean is not None and self.norm_std is not None:
+                    feat[0] = (feat[0] - self.norm_mean.reshape(-1, 1)) / self.norm_std.reshape(-1, 1)
+            else:
+                feat = self.extractor.get_mel_spectrogram_2d(window)
+
+            input_tensor = torch.tensor(feat, dtype=torch.float32).unsqueeze(0).to(self.device)
+
+            with torch.no_grad():
+                outputs = self.model(input_tensor)
+                if isinstance(outputs, tuple):
+                    logits, _ = outputs
+                else:
+                    logits = outputs
+
+                # Calibrate probabilities using temperature scaling
+                calibrated_logits = logits / self.temperature
+                probs = F.softmax(calibrated_logits, dim=1).squeeze(0).cpu().numpy()
+
+            top_idx = np.argmax(probs)
+            conf = float(probs[top_idx])
+
+            if conf > max_conf:
+                max_conf = conf
+                best_input_tensor = input_tensor
+                best_top1_idx = top_idx
+
+            all_probs.append(probs)
+            window_predictions.append({
+                "window_index": w_idx,
+                "prediction": self.classes[top_idx].capitalize(),
+                "confidence": conf,
+                "probabilities": {self.classes[i].capitalize(): float(probs[i]) for i in range(len(self.classes))}
+            })
+
+        # Aggregate probabilities across windows using RMS energy weights
+        rms_weights = []
+        for window in y_windows:
+            rms = np.sqrt(np.mean(window ** 2))
+            rms_weights.append(max(rms, 1e-4))
+
+        total_weight = sum(rms_weights)
+        aggregated_probs = np.zeros_like(all_probs[0])
+        for w_idx, probs in enumerate(all_probs):
+            aggregated_probs += (rms_weights[w_idx] / total_weight) * probs
+
+        # Sort aggregated probabilities
+        sorted_indices = np.argsort(aggregated_probs)[::-1]
         top_predictions = [
-            {"emotion": self.classes[idx].capitalize(), "probability": float(probs[idx])}
+            {"emotion": self.classes[idx].capitalize(), "probability": float(aggregated_probs[idx])}
             for idx in sorted_indices
         ]
-        
-        top1_idx = sorted_indices[0]
-        top1_prob = float(probs[top1_idx])
-        top2_prob = float(probs[sorted_indices[1]])
-        raw_prediction = self.classes[top1_idx].capitalize()
 
-        # 5. Local Explainability extraction
-        # Grad-CAM and Attention
-        grad_cam_heatmap, attn_weights = extract_explanations(self.model, input_tensor, top1_idx)
-        
-        # Convert arrays to serializable forms
+        top1_idx = sorted_indices[0]
+        top1_prob = float(aggregated_probs[top1_idx])
+        top2_prob = float(aggregated_probs[sorted_indices[1]])
+        final_prediction = self.classes[top1_idx].capitalize()
+
+        # Run explainability on the dominant window (with highest confidence)
+        grad_cam_heatmap, attn_weights = extract_explanations(self.model, best_input_tensor, best_top1_idx)
         grad_cam_list = grad_cam_heatmap.tolist() if grad_cam_heatmap is not None else []
         attn_list = attn_weights.tolist() if attn_weights is not None else []
 
-        # 6. Uncertainty Check & Reliability determination
-        # Criteria:
-        # - Probability < 0.40 OR
-        # - Margin between 1st and 2nd top predictions is < 0.15
-        is_uncertain = (top1_prob < 0.40) or ((top1_prob - top2_prob) < 0.15)
-        
+        # Determine uncertainty and reliability using calibrated validation thresholds
+        is_uncertain = (top1_prob < self.confidence_threshold) or ((top1_prob - top2_prob) < self.margin_threshold)
+
         if is_uncertain:
             prediction = "UNCERTAIN"
             reliability = "UNCERTAIN"
         else:
-            prediction = raw_prediction
+            prediction = final_prediction
             if top1_prob >= 0.70:
                 reliability = "HIGH"
             else:
@@ -178,11 +278,14 @@ class EmotionPredictor:
             "prediction": prediction,
             "probability": round(top1_prob, 3),
             "reliability": reliability,
-            "top_predictions": top_predictions[:3], # Top-3 predictions
+            "top_predictions": top_predictions[:3],
             "audio_quality": quality,
             "explainability": {
                 "grad_cam": grad_cam_list,
                 "attention": attn_list
             },
-            "model_metadata": self.metadata
+            "model_metadata": self.metadata,
+            "final_prediction": final_prediction,
+            "aggregated_probabilities": {self.classes[i].capitalize(): float(aggregated_probs[i]) for i in range(len(self.classes))},
+            "window_predictions": window_predictions
         }

@@ -10,6 +10,10 @@ from sklearn.metrics import (
 )
 from sklearn.preprocessing import label_binarize
 
+import sys
+# Add project root directory to python path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
 from ml.data.dataset import download_ravdess, parse_ravdess_metadata, get_speaker_independent_split
 from ml.preprocessing.audio_processor import AudioProcessor
 from ml.features.feature_extractor import FeatureExtractor

@@ -1,0 +1,9 @@
+{
+    "temperature": 1.484603762626648,
+    "raw_ece": 0.1433759627242883,
+    "calibrated_ece": 0.07522074456016221,
+    "raw_brier": 0.0866812989115715,
+    "calibrated_brier": 0.08268323540687561,
+    "confidence_threshold": 0.4,
+    "margin_threshold": 0.15
+}

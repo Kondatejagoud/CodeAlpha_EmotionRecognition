@@ -1,0 +1,7 @@
+Model Name,Features,Training Time (s),Validation Accuracy,Test Accuracy,Macro Precision,Macro Recall,Macro F1,Weighted F1
+SVM,mfcc,0.0,0.4917,0.3792,0.3537,0.3555,0.3478,0.371
+SVM,mfcc_d_dd,0.0,0.5083,0.4083,0.4153,0.3945,0.3872,0.397
+CNN,mel,0.0,0.4833,0.5083,0.5104,0.5,0.4699,0.4692
+CNN,mel_mfcc,0.0,0.3833,0.3875,0.4115,0.3633,0.339,0.3616
+CNN-BiLSTM,mel,0.0,0.4417,0.4042,0.3954,0.3789,0.3543,0.3779
+CNN-BiLSTM-Attention,mel,0.0,0.4667,0.4667,0.4777,0.4414,0.4056,0.4263

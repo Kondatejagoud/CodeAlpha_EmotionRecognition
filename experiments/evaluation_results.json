@@ -1,126 +1,126 @@
 {
     "model_name": "cnn-bilstm-attention",
     "feature_representation": "mel",
-    "evaluation_timestamp": "2026-08-18 11:17:14",
+    "evaluation_timestamp": "2026-08-18 23:56:15",
     "global_metrics": {
-        "accuracy": 0.1333,
-        "macro_precision": 0.0167,
-        "macro_recall": 0.125,
-        "macro_f1": 0.0294,
-        "weighted_f1": 0.0314,
-        "macro_roc_auc": 0.5453
+        "accuracy": 0.4458,
+        "macro_precision": 0.4746,
+        "macro_recall": 0.4258,
+        "macro_f1": 0.4096,
+        "weighted_f1": 0.4235,
+        "macro_roc_auc": 0.8173
     },
     "per_class_metrics": {
         "Neutral": {
-            "precision": 0.0,
-            "recall": 0.0,
-            "f1_score": 0.0
+            "precision": 0.5,
+            "recall": 0.125,
+            "f1_score": 0.2
         },
         "Calm": {
-            "precision": 0.0,
-            "recall": 0.0,
-            "f1_score": 0.0
+            "precision": 0.5312,
+            "recall": 0.5312,
+            "f1_score": 0.5312
         },
         "Happy": {
-            "precision": 0.0,
-            "recall": 0.0,
-            "f1_score": 0.0
+            "precision": 0.3056,
+            "recall": 0.3438,
+            "f1_score": 0.3235
         },
         "Sad": {
-            "precision": 0.0,
-            "recall": 0.0,
-            "f1_score": 0.0
+            "precision": 0.2857,
+            "recall": 0.125,
+            "f1_score": 0.1739
         },
         "Angry": {
-            "precision": 0.1333,
-            "recall": 1.0,
-            "f1_score": 0.2353
+            "precision": 0.375,
+            "recall": 0.8438,
+            "f1_score": 0.5192
         },
         "Fearful": {
-            "precision": 0.0,
-            "recall": 0.0,
-            "f1_score": 0.0
+            "precision": 0.7857,
+            "recall": 0.3438,
+            "f1_score": 0.4783
         },
         "Disgust": {
-            "precision": 0.0,
-            "recall": 0.0,
-            "f1_score": 0.0
+            "precision": 0.4194,
+            "recall": 0.4062,
+            "f1_score": 0.4127
         },
         "Surprised": {
-            "precision": 0.0,
-            "recall": 0.0,
-            "f1_score": 0.0
+            "precision": 0.5946,
+            "recall": 0.6875,
+            "f1_score": 0.6377
         }
     },
     "speaker_gender_breakdown": {
-        "male": 0.1333,
-        "female": 0.1333
+        "male": 0.35,
+        "female": 0.5417
     },
     "individual_actor_accuracy": {
-        "Actor_24": 0.1333,
-        "Actor_21": 0.1333,
-        "Actor_22": 0.1333,
-        "Actor_23": 0.1333
+        "Actor_24": 0.6667,
+        "Actor_21": 0.3,
+        "Actor_22": 0.4167,
+        "Actor_23": 0.4
     },
     "common_confusions": [
         {
-            "true": "Calm",
+            "true": "Disgust",
             "predicted": "Angry",
-            "count": 32
-        },
-        {
-            "true": "Happy",
-            "predicted": "Angry",
-            "count": 32
-        },
-        {
-            "true": "Sad",
-            "predicted": "Angry",
-            "count": 32
+            "count": 15
         },
         {
             "true": "Fearful",
-            "predicted": "Angry",
-            "count": 32
+            "predicted": "Happy",
+            "count": 10
         },
         {
-            "true": "Disgust",
+            "true": "Surprised",
             "predicted": "Angry",
-            "count": 32
+            "count": 10
+        },
+        {
+            "true": "Sad",
+            "predicted": "Calm",
+            "count": 9
+        },
+        {
+            "true": "Sad",
+            "predicted": "Disgust",
+            "count": 9
         }
     ],
     "class_difficulty_ranking": [
         {
-            "emotion": "Neutral",
-            "f1_score": 0.0
+            "emotion": "Sad",
+            "f1_score": 0.1739
         },
         {
-            "emotion": "Calm",
-            "f1_score": 0.0
+            "emotion": "Neutral",
+            "f1_score": 0.2
         },
         {
             "emotion": "Happy",
-            "f1_score": 0.0
-        },
-        {
-            "emotion": "Sad",
-            "f1_score": 0.0
-        },
-        {
-            "emotion": "Fearful",
-            "f1_score": 0.0
+            "f1_score": 0.3235
         },
         {
             "emotion": "Disgust",
-            "f1_score": 0.0
+            "f1_score": 0.4127
         },
         {
-            "emotion": "Surprised",
-            "f1_score": 0.0
+            "emotion": "Fearful",
+            "f1_score": 0.4783
         },
         {
             "emotion": "Angry",
-            "f1_score": 0.2353
+            "f1_score": 0.5192
+        },
+        {
+            "emotion": "Calm",
+            "f1_score": 0.5312
+        },
+        {
+            "emotion": "Surprised",
+            "f1_score": 0.6377
         }
     ],
     "misclassified_samples": [
@@ -129,70 +129,70 @@
             "gender": "male",
             "actor_id": 21,
             "true_emotion": "Neutral",
-            "predicted_emotion": "Angry"
+            "predicted_emotion": "Calm"
         },
         {
             "filename": "03-01-01-01-01-02-21.wav",
             "gender": "male",
             "actor_id": 21,
             "true_emotion": "Neutral",
-            "predicted_emotion": "Angry"
-        },
-        {
-            "filename": "03-01-01-01-02-01-21.wav",
-            "gender": "male",
-            "actor_id": 21,
-            "true_emotion": "Neutral",
-            "predicted_emotion": "Angry"
+            "predicted_emotion": "Calm"
         },
         {
             "filename": "03-01-01-01-02-02-21.wav",
             "gender": "male",
             "actor_id": 21,
             "true_emotion": "Neutral",
-            "predicted_emotion": "Angry"
+            "predicted_emotion": "Disgust"
         },
         {
             "filename": "03-01-02-01-01-01-21.wav",
             "gender": "male",
             "actor_id": 21,
             "true_emotion": "Calm",
-            "predicted_emotion": "Angry"
+            "predicted_emotion": "Disgust"
         },
         {
             "filename": "03-01-02-01-01-02-21.wav",
             "gender": "male",
             "actor_id": 21,
             "true_emotion": "Calm",
-            "predicted_emotion": "Angry"
+            "predicted_emotion": "Disgust"
         },
         {
-            "filename": "03-01-02-01-02-01-21.wav",
+            "filename": "03-01-02-02-02-02-21.wav",
             "gender": "male",
             "actor_id": 21,
             "true_emotion": "Calm",
-            "predicted_emotion": "Angry"
+            "predicted_emotion": "Disgust"
         },
         {
-            "filename": "03-01-02-01-02-02-21.wav",
+            "filename": "03-01-03-01-01-01-21.wav",
             "gender": "male",
             "actor_id": 21,
-            "true_emotion": "Calm",
-            "predicted_emotion": "Angry"
+            "true_emotion": "Happy",
+            "predicted_emotion": "Calm"
         },
         {
-            "filename": "03-01-02-02-01-01-21.wav",
+            "filename": "03-01-03-01-01-02-21.wav",
             "gender": "male",
             "actor_id": 21,
-            "true_emotion": "Calm",
-            "predicted_emotion": "Angry"
+            "true_emotion": "Happy",
+            "predicted_emotion": "Disgust"
         },
         {
-            "filename": "03-01-02-02-01-02-21.wav",
+            "filename": "03-01-03-01-02-01-21.wav",
             "gender": "male",
             "actor_id": 21,
-            "true_emotion": "Calm",
-            "predicted_emotion": "Angry"
+            "true_emotion": "Happy",
+            "predicted_emotion": "Neutral"
+        },
+        {
+            "filename": "03-01-03-01-02-02-21.wav",
+            "gender": "male",
+            "actor_id": 21,
+            "true_emotion": "Happy",
+            "predicted_emotion": "Disgust"
         }
     ]
 }
