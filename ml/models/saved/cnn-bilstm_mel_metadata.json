@@ -1,0 +1,25 @@
+{
+    "model_version": "1.0.0",
+    "model_name": "CNN-BiLSTM",
+    "architecture": "cnn_bilstm",
+    "dataset": "RAVDESS Speech (Actors 01-24)",
+    "feature_representation": "mel",
+    "training_date": "2026-08-19 00:40:00",
+    "training_actors": "1-18",
+    "validation_actors": "19-20",
+    "test_actors": "21-24",
+    "hyperparameters": {
+        "epochs": 3,
+        "batch_size": 32,
+        "learning_rate": 0.001,
+        "optimizer": "AdamW"
+    },
+    "metrics": {
+        "val_accuracy": 0.44166666666666665,
+        "test_accuracy": 0.4041666666666667,
+        "macro_precision": 0.39542051547486334,
+        "macro_recall": 0.37890625,
+        "macro_f1": 0.35425728219655944,
+        "weighted_f1": 0.3778744343429967
+    }
+}

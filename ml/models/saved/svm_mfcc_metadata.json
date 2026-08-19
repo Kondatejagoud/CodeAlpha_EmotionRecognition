@@ -1,0 +1,26 @@
+{
+    "model_version": "1.0.0",
+    "model_name": "SVM",
+    "architecture": "svm",
+    "dataset": "RAVDESS Speech (Actors 01-24)",
+    "feature_representation": "mfcc",
+    "training_date": "2026-08-19 00:22:30",
+    "training_actors": "1-18",
+    "validation_actors": "19-20",
+    "test_actors": "21-24",
+    "hyperparameters": {
+        "epochs": "N/A",
+        "batch_size": "N/A",
+        "learning_rate": "N/A",
+        "optimizer": "N/A",
+        "C": 1.0
+    },
+    "metrics": {
+        "val_accuracy": 0.49166666666666664,
+        "test_accuracy": 0.37916666666666665,
+        "macro_precision": 0.353689874453994,
+        "macro_recall": 0.35546875,
+        "macro_f1": 0.3477863091417659,
+        "weighted_f1": 0.3709720630845503
+    }
+}

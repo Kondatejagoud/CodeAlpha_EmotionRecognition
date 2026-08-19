@@ -1,0 +1,25 @@
+{
+    "model_version": "1.0.0",
+    "model_name": "CNN-BiLSTM-Attention",
+    "architecture": "cnn_bilstm_attention",
+    "dataset": "RAVDESS Speech (Actors 01-24)",
+    "feature_representation": "mel",
+    "training_date": "2026-08-19 00:40:00",
+    "training_actors": "1-18",
+    "validation_actors": "19-20",
+    "test_actors": "21-24",
+    "hyperparameters": {
+        "epochs": 35,
+        "batch_size": 32,
+        "learning_rate": 0.001,
+        "optimizer": "AdamW"
+    },
+    "metrics": {
+        "val_accuracy": 0.4666666666666667,
+        "test_accuracy": 0.4666666666666667,
+        "macro_precision": 0.4777001080896575,
+        "macro_recall": 0.44140625,
+        "macro_f1": 0.40558535698694775,
+        "weighted_f1": 0.4262751744368713
+    }
+}

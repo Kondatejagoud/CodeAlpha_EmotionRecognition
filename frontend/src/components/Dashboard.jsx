@@ -256,6 +256,11 @@ export default function Dashboard() {
           />
         </section>
       </main>
+      <footer className="app-footer" style={{ padding: "1.5rem", borderTop: "1px solid #eee", marginTop: "2rem", textAlign: "center", fontSize: "0.85rem", color: "#666" }}>
+        <p className="limitation-notice">
+          <strong>Limitation Notice:</strong> This system predicts acoustic patterns associated with emotion categories in the training dataset. It does not determine a person's actual psychological or mental state.
+        </p>
+      </footer>
     </div>
   );
 }

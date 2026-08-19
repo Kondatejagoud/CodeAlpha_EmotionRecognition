@@ -14,7 +14,9 @@ pip-delete-this-directory.txt
 # ML Data & Artifacts
 ml/data/ravdess/
 ml/data/*.zip
-ml/models/saved/
+ml/models/saved/*
+!ml/models/saved/*.pt
+!ml/models/saved/*.json
 experiments/*.pt
 experiments/*.onnx
 experiments/*.pkl

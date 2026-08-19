@@ -1,22 +1,20 @@
-# EmotionSense AI — Explainable Speech Emotion Recognition System
+# EmotionSense AI
 
-EmotionSense AI is a research-grade, explainable Speech Emotion Recognition (SER) system that predicts emotional states from microphone recording inputs or uploaded audio files. 
+## Overview
+EmotionSense AI is a research-grade, explainable Speech Emotion Recognition (SER) system that predicts emotional categories from live microphone inputs or uploaded audio files. Developed as part of the **CodeAlpha Machine Learning Internship**, it addresses the core issues of standard emotion recognition models—specifically speaker data leakage and the black-box nature of deep learning predictions—by introducing speaker-independent evaluation, a pre-inference audio quality safety gate, and local explainability visuals.
 
-This project goes beyond typical tutorial setups (which suffer from speaker data leakage and black-box predictions) by implementing a multi-level modeling pipeline (up to **CNN-BiLSTM-Attention**), a pre-inference **Audio Quality Analyzer**, and local/global explainability indicators (including **Grad-CAM spectrogram hotspots** and **temporal attention timelines**).
+## Problem Statement
+Standard Speech Emotion Recognition systems often suffer from over-optimistic performance metrics due to "speaker leakage" (where audio samples from the same speaker appear in both the training and test sets). When deployed in the real world on unseen speakers, these models crash in accuracy. Furthermore, deep neural networks are black boxes, offering no explanation for *why* an emotion was predicted, which makes them unsuitable for transparent applications.
 
----
+## Features
+1. **Audio Quality Analysis (AQA)**: Filters and inspects incoming audio for sample rate, duration, loudness, clipping, and signal-to-noise ratio before predictions run.
+2. **Speaker-Independent Splits**: Isolates speakers completely across datasets to ensure genuine out-of-sample performance reporting.
+3. **Multi-Window sliding-window inference**: Supports variable-length live recordings by sliding a 3.0s window with 50% overlap and aggregating predictions using speech-energy (RMS) weights.
+4. **Soft Temporal Self-Attention**: Focuses on specific syllables and emphasis regions over time, rendering a timeline of attention weights.
+5. **Spectrogram Grad-CAM heatmaps**: Backpropagates activation scores to visual frequency hotspots.
+6. **Calibrated Safety Gates**: Applies post-training temperature scaling to calibrate probabilities, rejecting predictions that fall below reliability thresholds.
 
-## Key Highlights & Features
-1. **Audio Quality Analyzer (AQA)**: Validates duration, clipping ratio, silence ratio, RMS, and SNR estimates before feeding inputs to models, ensuring predictions are based on clean speech data.
-2. **Speaker-Independent splits**: Avoids speaker data leakage by keeping training (actors 1-18), validation (actors 19-20), and testing (actors 21-24) speakers completely isolated.
-3. **Soft Self-Attention Mechanism**: Directs the network to focus on specific syllables or emphasis regions over time, exporting visual frame-level attention weights ($\alpha_t$) onto a timeline.
-4. **Grad-CAM Spectrogram Heatmaps**: Backpropagates activation scores to the last CNN convolutional layer to display exactly which frequency bands drove prediction.
-5. **Prediction Reliability Flagging**: Incorporates uncertainty handling (refuses to present a confident label if probability is low ($< 0.40$) or margin is tight ($< 0.15$)).
-
----
-
-## System Architecture
-
+## Architecture
 ```
                   +----------------------------------------------+
                   |               Web Frontend                   |
@@ -51,142 +49,139 @@ This project goes beyond typical tutorial setups (which suffer from speaker data
                   +----------------------------------------------+
                   |                 Inference Pipeline           |
                   |  - Level D Model: CNN -> BiLSTM -> Attention |
+                  |  - Temperature scaling calibration (T=1.48)  |
                   |  - Grad-CAM on Mel Spectrogram features       |
                   |  - Temporal Attention Weights Extractor       |
-                  |  - Uncertainty handling & reliability checks  |
+                  |  - Uncertainty safety gates validation        |
                   +----------------------------------------------+
 ```
 
----
+## Dataset
+The system uses the **RAVDESS (Ryerson Audio-Visual Database of Emotional Speech and Song)** dataset, containing 1,440 emotional utterances from 24 actors expressing 8 emotions (neutral, calm, happy, sad, angry, fearful, disgust, surprised).
 
-## Project Directory Structure
+## Speaker-Independent Evaluation
+To report honest metrics, the dataset is divided by actors to ensure complete speaker isolation:
+* **Training Actors**: 1–18 (1,080 files)
+* **Validation Actors**: 19–20 (120 files)
+* **Testing Actors**: 21–24 (240 files)
 
+## Preprocessing
+* Resampling to exactly **22050 Hz** mono.
+* Silence trimming at **30 dB** threshold.
+* Segment padding and cropping to a unified **3.0s** duration.
+* Channel Z-score scaling using parameters computed strictly over training actors: [`mel_normalization.json`](file:///c:/Users/goudt/OneDrive/Desktop/intern/Emotion_Recognition/models/mel_normalization.json).
+
+## Model Architecture
+* **SpeechCNNLSTMAttention**:
+  1. **2D CNN Feature Extractor**: 4 convolutional layers (with BatchNorm, MaxPool, and Dropout) extracting time-frequency local maps.
+  2. **Bidirectional LSTM Temporal Layer**: Learns bidirectional temporal sequencing.
+  3. **Soft Self-Attention Layer**: Learns weighted syllable-level importances over time.
+
+## Training
+The training pipeline features:
+* **Optimizer**: `AdamW` with weight decay.
+* **Scheduling**: `ReduceLROnPlateau` reducing learning rates on validation plateaus.
+* **Class Weighting**: Dynamically balanced loss weights to handle neutral sample imbalances.
+* **Checkpointing**: Automatic early stopping and saving based on minimum validation loss.
+
+## Evaluation
+A single test run on the untouched test set (Actors 21–24) using the best pre-trained model checkpoint achieves:
+* **Overall Raw Test Accuracy**: **46.7%**
+* **Macro-F1 Score**: **40.6%**
+* **Calibrated Safety-Gated Accuracy**: **64.5%** (at **51.7%** coverage).
+
+## Explainability
+* **Temporal Attention Mapping**: Overlays frame-level self-attention weights onto the audio timeline, identifying the exact milliseconds representing the highest emotional intensity.
+* **Spectrogram Grad-CAM**: Highlights which frequency bins (Hz) in the Mel Spectrogram drove the convolutional layers to classify the emotion.
+
+## Audio Quality Analysis
+Before predictions are run, the input audio is analyzed across:
+* **Duration**: Discards files that are too short.
+* **Sample Rate**: Verifies sampling rates.
+* **RMS Energy**: Measures speech signal loudness.
+* **Clipping Ratio**: Determines if the signal suffers from gain distortion.
+* **Silence Ratio**: Identifies if the clip is mostly silence.
+* **SNR Estimate**: Computes background noise ratio.
+* **AQA Status**: Evaluates to `GOOD`, `WARNING` (if slight issues exist), or `UNSUITABLE` (disallows prediction).
+
+## Uncertainty / Reliability
+A post-training Temperature parameter ($T = 1.4846$) is applied to calibrate validation probabilities, lowering Expected Calibration Error (ECE) from **14.34%** to **7.52%**. 
+Predictions are marked **UNCERTAIN** if:
+1. Calibrated confidence probability is $< 0.40$.
+2. Margin between top-two predictions is $< 0.15$.
+
+## Technology Stack
+* **Backend**: FastAPI, SQLAlchemy (SQLite database), PyTorch, Librosa.
+* **Frontend**: React, Vite, WaveSurfer.js, Chart.js.
+
+## Project Structure
 ```
 Emotion_Recognition/
 ├── backend/
 │   ├── app/
-│   │   ├── api/
-│   │   │   └── endpoints.py         # Prediction & History REST routes
-│   │   ├── core/
-│   │   │   ├── config.py            # env loader
-│   │   │   └── database.py          # SQLAlchemy Session setup
-│   │   ├── models/
-│   │   │   └── schema.py            # Prediction log table model
-│   │   ├── services/
-│   │   │   ├── audio_analyzer.py    # Pre-inference Audio Quality Analyzer
-│   │   │   ├── explainability.py    # Grad-CAM and attention calculations
-│   │   │   └── inference.py
-│   │   └── main.py                  # Server app init
+│   │   ├── api/endpoints.py         # Prediction REST endpoints
+│   │   ├── core/database.py         # SQLite connection setup
+│   │   ├── services/audio_analyzer.py # AQA service
+│   │   └── main.py                  # API server init
 │   └── requirements.txt
-│
 ├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── AudioRecorder.jsx    # Microphone recording + Canvas visualizer
-│   │   │   ├── AudioUpload.jsx      # Drag & Drop file upload
-│   │   │   ├── QualityReport.jsx    # Displays AQA metrics
-│   │   │   ├── AttentionPlot.jsx    # Timeline attention weight overlay
-│   │   │   ├── GradCamPlot.jsx      # Heatmap overlay on spectrogram
-│   │   │   ├── PredictionHistory.jsx # Log lists
-│   │   │   └── Dashboard.jsx        # Grid layout orchestrator
-│   │   ├── App.jsx
-│   │   ├── index.css                # Custom glassmorphic CSS styling
-│   │   └── main.jsx
-│   ├── index.html
-│   ├── package.json
-│   └── vite.config.js
-│
+│   ├── src/components/Dashboard.jsx # UI Grid controller
+│   └── package.json
 ├── ml/
-│   ├── data/
-│   │   └── dataset.py               # RAVDESS zip downloader & parser
-│   ├── preprocessing/
-│   │   └── audio_processor.py       # Audio duration padding & trim
-│   ├── features/
-│   │   └── feature_extractor.py     # Mel spect & MFCC feature mapping
-│   ├── models/
-│   │   ├── baselines.py             # Level A: SVM baseline
-│   │   ├── cnn.py                   # Level B: 2D Speech CNN
-│   │   ├── cnn_lstm.py              # Level C: CNN-BiLSTM
-│   │   └── cnn_lstm_att.py          # Level D: CNN-BiLSTM-Attention (Best)
-│   ├── training/
-│   │   └── train.py                 # Multi-level ablation run script
-│   └── evaluation/
-│       └── evaluate.py              # Speaker-independent test evaluation script
-│
-├── docs/
-│   └── model_card.md                # Research-style model documentation
-├── experiments/                     # CSV charts, training logs, results
-└── tests/                           # Pytest unit testing suite
+│   ├── data/dataset.py               # Dataset splits downloader
+│   ├── models/cnn_lstm_att.py       # PyTorch Model graph
+│   └── training/train.py             # Training loop
+├── demo/                             # Sample audio files
+├── models/                           # Configurations and нормализаторы
+└── README.md
 ```
 
----
+## Installation
+Clone the repository and install the backend packages:
+```bash
+pip install -r requirements.txt
+```
 
-## Installation & Setup
+## Running the Backend
+Launch the FastAPI development server:
+```bash
+python backend/app/main.py
+```
+API docs are available at `http://127.0.0.1:8000/docs`.
 
-### Prerequisites
-- Python 3.8+
-- Node.js (with npm)
-
-### Backend setup
-1. In the repository root, install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-2. Setup environment variables by editing `.env` (a template exists as `.env.example`).
-3. Run the API backend server:
-   ```bash
-   python backend/app/main.py
-   ```
-   The interactive Swagger documentation will be available at `http://127.0.0.1:8000/docs`.
-
-### Frontend Setup
-1. Open a new terminal in the `frontend` folder:
+## Running the Frontend
+1. Change directory to frontend and install npm components:
    ```bash
    cd frontend
    npm install
    ```
-2. Launch the React development server:
+2. Start the Vite React app:
    ```bash
    npm run dev
    ```
-3. Open `http://localhost:5173` in your browser.
+   Open `http://localhost:5173` in your web browser.
 
----
-
-## ML Pipeline Workflows
-
-### Programmatic Download & Splits
-To run training, execute:
-```bash
-python ml/training/train.py
-```
-This script will:
-1. Programmatically download the RAVDESS Speech dataset (~248MB) from Zenodo.
-2. Group files speaker-independently:
-   - **Training Set**: Actors 1–18
-   - **Validation Set**: Actors 19–20
-   - **Testing Set**: Actors 21–24
-3. Apply training-only audio augmentations (stretch, pitch shift, volume scaling, white noise injection).
-4. Run a multi-model **Ablation Study** comparing feature configurations. Logs results to `experiments/model_comparison.csv`.
-
-### Speaker-Independent Evaluation
-To evaluate the final model and produce reports (including confusion matrices, class difficulty, and gender/actor breakdowns):
-```bash
-python ml/evaluation/evaluate.py
-```
-Results will save to `experiments/evaluation_results.json` and a plot to `experiments/confusion_matrix.png`.
-
----
-
-## Testing
-Run the modular test suite to verify code stability:
-```bash
-python -m pytest tests/
+## Example Prediction
+Using a file from the `demo/` folder, uploading `demo/angry_statement.wav` results in:
+```json
+{
+  "prediction": "Angry",
+  "probability": 0.812,
+  "reliability": "HIGH",
+  "audio_quality": { "status": "GOOD", "rms": 0.054, "snr_est": 25.4 }
+}
 ```
 
----
+## Limitations
+* **Speaker Inflections**: Studio-recorded datasets can have exaggerated speech inflections compared to natural colloquial discussions.
+* **Accents & Accent Shift**: Performance may vary for distinct accents outside of the training set.
 
-## Limitations & Ethical Considerations
-- **No Diagnostics**: This system maps raw vocal acoustic patterns to emotional classes. It **does not** determine a speaker's actual psychological state, truthfulness, or diagnose mental health conditions.
-- **Actor Inflection Bias**: The training set features studio actors. Real-world natural speaking styles can have different vocal patterns.
-- **Accents**: The system is trained on North American English speakers and may exhibit performance shifts for other language speakers or distinct accents.
+## Ethical Considerations
+Vocal properties vary across individuals, cultures, and age groups. Classification is strictly an acoustic matching pattern and must not be used as clinical psychological evaluations.
+
+## Future Improvements
+* Multi-lingual model training.
+* Noise-resilient Mel filterbanks.
+
+## Internship Task
+This project was developed for the **CodeAlpha Machine Learning Internship** as part of the final Speech Emotion Recognition systems engineering submission.

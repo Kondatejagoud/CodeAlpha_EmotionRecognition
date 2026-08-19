@@ -1,0 +1,14 @@
+{
+    "sample_rate": 22050,
+    "n_mels": 128,
+    "n_fft": 2048,
+    "hop_length": 512,
+    "win_length": 2048,
+    "fmin": 0,
+    "fmax": null,
+    "target_duration": 3.0,
+    "trim_db": 30.0,
+    "normalize_volume": true,
+    "normalization_type": "z_score_mel",
+    "normalization_file": "models/mel_normalization.json"
+}
